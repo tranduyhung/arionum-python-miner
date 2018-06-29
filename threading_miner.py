@@ -4,7 +4,6 @@ import base64
 import hashlib
 import math
 import threading
-import multiprocessing
 import os
 import random
 import re
@@ -19,7 +18,7 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 POOL_URL = "aro.cool"
 WALLET_ADDRESS = ""
 WORKER_NAME = hashlib.sha224((os.uname()[1]).encode("utf-8")).hexdigest()[0:32]
-WORKER_QUANTITY = math.ceil((multiprocessing.cpu_count() + 1) / 2)
+WORKER_QUANTITY = math.ceil((os.cpu_count() + 1) / 2)
 HASH_RATE_INTERVAL = 20
 SUBMITTED_NONCES = 0
 FAILED_NONCES = 0;
@@ -293,13 +292,13 @@ def main():
 
     if "hash_rate_interval" in config:
         hash_rate_interval = config["hash_rate_interval"]
-        
+
         try:
             hash_rate_interval += 1
         except TypeError:
             print("hash_rate_interval must be an integer")
             exit()
- 
+
         if config["hash_rate_interval"] > 0:
             HASH_RATE_INTERVAL =  config["hash_rate_interval"]
 
