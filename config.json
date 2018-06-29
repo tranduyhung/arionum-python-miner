@@ -1,0 +1,8 @@
+{
+    "pool": "aro.cool",
+    "wallet_address": "5n4x4MFi97B9jnYn7JbtnnKhrc9kzzpLEvAriB2qRypz6dhuHZjRsaAwbQp3NDPSeMv7L8GiACz5yNGx2Z3UQc9",
+    "worker_name" : "python",
+    "worker_quantity" : 4,
+    "hash_rate_interval": 20,
+    "rest": 0
+}
