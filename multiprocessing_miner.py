@@ -324,7 +324,6 @@ def main():
     print("Worker quantity: %s" % (WORKER_QUANTITY))
     print("Show hash rate: every %s work(s)" % (HASH_RATE_INTERVAL))
     print("Rest: %s second(s)" % (REST))
-    print("Miner is running with PID %d" % (os.getpid()))
 
     update_work()
     workers = []
@@ -338,7 +337,7 @@ def main():
         workers.append(worker)
         HASH_RATES[i] = 0
         worker.start()
-        print("Worker #%d started" % (i))
+        print("Worker #%d started with PID %d" % (i, worker.pid))
 
 if __name__ == '__main__':
     main()
