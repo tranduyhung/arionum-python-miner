@@ -3,7 +3,7 @@ import argparse
 import base64
 import hashlib
 import math
-from multiprocessing import Process, Array
+from multiprocessing import Process, Array, Value, Lock
 import os
 import random
 import re
@@ -24,7 +24,7 @@ SUBMITTED_NONCES = 0
 FAILED_NONCES = 0;
 LAST_UPDATE = ""
 DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
-HASH_RATES = ''
+HASH_RATES = []
 REST = 0
 
 # Work and info from pool
@@ -105,9 +105,12 @@ def update_work():
         time.sleep(5)
 
 class Worker (Process):
-    def __init__(self, id):
+    def __init__(self, id, submitted_nonces, failed_nonces, lock):
         Process.__init__(self)
         self.id = id
+        self.submitted_nonces = submitted_nonces
+        self.failed_nonces = failed_nonces
+        self.lock = lock
 
     def update_work(self):
         global LAST_UPDATE
@@ -132,9 +135,6 @@ class Worker (Process):
         global BLOCK
         global DIFFICULTY
         global HASH_RATE_INTERVAL
-        global HASH_RATES
-        global SUBMITTED_NONCES
-        global FAILED_NONCES
         global REST
 
         work_count = 0
@@ -179,8 +179,8 @@ class Worker (Process):
                     print('%.2f H/s - %d worker(s) - %d/%d nonce(s) submitted successfully'
                         % (sum(HASH_RATES),
                             len(HASH_RATES),
-                            SUBMITTED_NONCES,
-                            SUBMITTED_NONCES + FAILED_NONCES))
+                            self.submitted_nonces.value,
+                            self.submitted_nonces.value + self.failed_nonces.value))
 
             if REST > 0:
                 time.sleep(REST)
@@ -191,8 +191,6 @@ class Worker (Process):
     def submit_nonce(self, nonce, argon, pool_address):
         global POOL_URL
         global WALLET_ADDRESS
-        global SUBMITTED_NONCES
-        global FAILED_NONCES
 
         argon = argon[30:]
         print("Submitting nonce:")
@@ -226,10 +224,12 @@ class Worker (Process):
 
             if data == "accepted":
                 print("Submitted nonce successfully")
-                SUBMITTED_NONCES += 1
+                with self.lock:
+                    self.submitted_nonces.value += 1
             else:
                 print("Failed to submit nonce:\n", data)
-                FAILED_NONCES += 1
+                with self.lock:
+                    self.failed_nonces.value += 1
         else:
             print("Unknown response from pool:\n", json_response)
 
@@ -329,9 +329,12 @@ def main():
     update_work()
     workers = []
     HASH_RATES = Array('f', range(WORKER_QUANTITY))
+    SUBMITTED_NONCES = Value('I', 0)
+    FAILED_NONCES = Value('I', 0)
+    lock = Lock()
 
     for i in range(WORKER_QUANTITY):
-        worker = Worker(i)
+        worker = Worker(i, SUBMITTED_NONCES, FAILED_NONCES, lock)
         workers.append(worker)
         HASH_RATES[i] = 0
         worker.start()
